@@ -31,7 +31,7 @@ if (path == "/")
 else if (path.StartsWith("/echo/"))
 {
     var message = path.Substring(6);
-    response = $"{httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContext-Length: {message.Length}\r\n\r\n{message}";
+    response = $"{httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {message.Length}\r\n\r\n{message}";
 }
 else
 {
