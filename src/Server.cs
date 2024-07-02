@@ -48,5 +48,5 @@ else
 
 socket.Send(Encoding.UTF8.GetBytes(response));
 
-socket.Close();
+
 
