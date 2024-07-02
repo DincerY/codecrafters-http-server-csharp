@@ -15,10 +15,13 @@ var val = Encoding.UTF8.GetString(responseBuffer).Split("\r\n");
 
 var lineFirstPart = val[0].Split(" ");
 
+string headerVal = "";
 
-var keyValue = val[2].Split(": ");
+if (val[3] != "")
+{
+    headerVal = val[3].Split(": ")[1];
+}
 
-var headerVal = keyValue[1];
 
 var method = lineFirstPart[0];
 var path = lineFirstPart[1];
