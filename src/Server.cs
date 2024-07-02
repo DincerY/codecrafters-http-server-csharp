@@ -16,7 +16,7 @@ var val = Encoding.UTF8.GetString(responseBuffer).Split("\r\n");
 var lineFirstPart = val[0].Split(" ");
 
 
-var keyValue = val[3].Split(": ");
+var keyValue = val[2].Split(": ");
 
 var headerVal = keyValue[1];
 
