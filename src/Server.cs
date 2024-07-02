@@ -26,3 +26,5 @@ var response = path == "/" ? $"{httpVersion} 200 OK\r\n\r\n" : $"{httpVersion} 4
 
 socket.Send(Encoding.UTF8.GetBytes(response));
 
+socket.Close();
+
