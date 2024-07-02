@@ -22,7 +22,21 @@ var method = lineFirstPart[0];
 var path = lineFirstPart[1];
 var httpVersion = lineFirstPart[2];
 
-var response = path == "/" ? $"{httpVersion} 200 OK\r\n\r\n" : $"{httpVersion} 404 Not Found\r\n\r\n";
+string response = "";
+
+if (path == "/")
+{
+    response = $"{httpVersion} 200 OK\r\n\r\n";
+}
+else if (path.StartsWith("/echo/"))
+{
+    var message = path.Substring(6);
+    response = $"{httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContext-Length: {message.Length}\r\n\r\n{message}";
+}
+else
+{
+    response = $"{httpVersion} 404 Not Found\r\n\r\n";
+}
 
 socket.Send(Encoding.UTF8.GetBytes(response));
 
