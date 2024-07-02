@@ -8,4 +8,4 @@ debug: false
 # on Codecrafters.
 #
 # Available versions: dotnet-8.0
-language_pack: dotnet-8.0
+language_pack: dotnet-7.0
