@@ -15,8 +15,6 @@ var val = Encoding.UTF8.GetString(responseBuffer).Split("\r\n");
 
 var lineFirstPart = val[0].Split(" ");
 
-var userAgent = val.SingleOrDefault(a => a.Contains("User-Agent:"));
-var headerVal = userAgent.Split(": ")[1];
 
 
 var method = lineFirstPart[0];
@@ -38,6 +36,8 @@ else if (path.StartsWith("/echo/"))
 }
 else if (path.StartsWith("/user-agent"))
 {
+    var userAgent = val.SingleOrDefault(a => a.Contains("User-Agent:"));
+    var headerVal = userAgent.Split(": ")[1];
     response = $"{httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
 }
 else
