@@ -25,18 +25,18 @@ Task HandleConnection(Socket socket)
 
     if (request.Path == "/")
     {
-        response = $"{request.HttpVersion} {HttpStatus.OK} OK\r\n\r\n";
+        response = $"{request.HttpVersion} 200 OK\r\n\r\n";
     }
     else if (request.Path.StartsWith("/echo/"))
     {
         var message = request.Path.Substring(6);
-        response = $"{request.HttpVersion} {HttpStatus.OK} OK\r\nContent-Type: text/plain\r\nContent-Length: {message.Length}\r\n\r\n{message}";
+        response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {message.Length}\r\n\r\n{message}";
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
         var userAgent = request.Lines.SingleOrDefault(a => a.Contains("User-Agent:"));
         var headerVal = userAgent.Split(": ")[1];
-        response = $"{request.HttpVersion} {HttpStatus.OK} OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
+        response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
     }
     else if (request.Path.StartsWith("/files/"))
     {
@@ -47,17 +47,17 @@ Task HandleConnection(Socket socket)
         if (File.Exists(filePath))
         {
             fileText = File.ReadAllText(filePath);
-            response = $"{request.HttpVersion} {HttpStatus.OK} OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+            response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
         }
         else
         {
-            response = $"{request.HttpVersion} {HttpStatus.NotFound} Not Found\r\n\r\n";
+            response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
         }
 
     }
     else
     {
-        response = $"{request.HttpVersion} {HttpStatus.NotFound} Not Found\r\n\r\n";
+        response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
     }
 
     socket.Send(Encoding.UTF8.GetBytes(response));
@@ -81,11 +81,6 @@ class Request
     public string HttpVersion { get; }
 }
 
-enum HttpStatus
-{
-    OK = 200,
-    NotFound = 404
-}
 
 
 
