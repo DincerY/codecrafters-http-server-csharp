@@ -52,7 +52,7 @@ Task HandleConnection(Socket socket)
         if (File.Exists(filePath))
         {
             fileText = File.ReadAllText(filePath);
-            response = $"{httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length - 1}\r\n\r\n{fileText}";
+            response = $"{httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
         }
         else
         {
