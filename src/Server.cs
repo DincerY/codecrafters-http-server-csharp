@@ -129,7 +129,7 @@ class Response
    
         if (Body != null)
         {
-            builder.Append($"{Body.TrimEnd('\0')}");
+            builder.Append($"{Body}");
         }
         return builder.ToString();
     }
@@ -154,7 +154,7 @@ class Request
         HttpMethod = Lines[0].Split(" ")[0];
         Path = Lines[0].Split(" ")[1];
         HttpVersion = Lines[0].Split(" ")[2];
-        Body = Lines[^1].TrimEnd();
+        Body = Lines[^1].TrimEnd('\0');
         Headers = new Dictionary<string, string>();
 
         for (int i = 1; i < Lines.Length - 2; i++)
