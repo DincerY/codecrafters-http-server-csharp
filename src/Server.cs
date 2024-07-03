@@ -1,10 +1,15 @@
+using System;
+using System.ComponentModel;
 using System.Net;
+using System.Net.Mime;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 
 TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
+
 while (true)
 {
     var socket = server.AcceptSocket();
@@ -24,7 +29,8 @@ Task HandleConnection(Socket socket)
 
     if (request.Path == "/")
     {
-        response = $"{request.HttpVersion} 200 OK\r\n\r\n";
+        //response = $"{request.HttpVersion} 200 OK\r\n\r\n";
+        response = new Response(request.HttpVersion, StatusCode.Ok).ToString();
     }
     else if (request.Path.StartsWith("/echo/"))
     {
@@ -35,7 +41,8 @@ Task HandleConnection(Socket socket)
     {
         var userAgent = request.Lines.SingleOrDefault(a => a.Contains("User-Agent:"));
         var headerVal = userAgent.Split(": ")[1];
-        response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
+        //response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
+        response = new Response(request.HttpVersion, StatusCode.Ok,headerVal,"text/plain").ToString();
     }
     else if (request.Path.StartsWith("/files/"))
     {
@@ -48,7 +55,9 @@ Task HandleConnection(Socket socket)
             if (File.Exists(filePath))
             {
                 fileText = File.ReadAllText(filePath);
-                response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+                //response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+                response = new Response(request.HttpVersion, StatusCode.Ok, fileText,
+                    "application/octet-stream").ToString();
             }
             else
             {
@@ -59,18 +68,51 @@ Task HandleConnection(Socket socket)
         {
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.UTF8.GetBytes(request.Body));
-            response = $"{request.HttpVersion} 201 Created\r\n\r\n";
+            //response = $"{request.HttpVersion} 201 Created\r\n\r\n";
+            response = new Response(request.HttpVersion, StatusCode.Created).ToString();
         }
 
     }
     else
     {
-        response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
+        //response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
+        response = new Response(request.HttpVersion, StatusCode.NotFound).ToString();
     }
 
     socket.Send(Encoding.UTF8.GetBytes(response));
     socket.Close();
     return Task.CompletedTask;
+}
+
+class Response
+{
+    public Response(string version, StatusCode status)
+    {
+        Version = version;
+        Status = status;
+    }
+    public Response(string version, StatusCode status, string body, string contentType) : this(version,status)
+    {
+        Body = body;
+        ContentType = contentType;
+    }
+    public StatusCode Status { get; }
+    public string Body { get; }
+    public string? ContentType { get; }
+    public string? Version { get; }
+
+    public override string ToString()
+    {
+        //return $"{Version} {(int)Status} {Status.GetDescription()}\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+        StringBuilder builder = new StringBuilder();
+        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
+        if (ContentType != null)
+        {
+            builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}\r\n\r\n{Body}");
+        }
+        return builder.ToString();
+        
+    }
 }
 
 class Request
@@ -81,7 +123,7 @@ class Request
         HttpMethod = Lines[0].Split(" ")[0];
         Path = Lines[0].Split(" ")[1];
         HttpVersion = Lines[0].Split(" ")[2];
-        Body = Lines[^1].TrimEnd('\0');
+        Body = Lines[^1].TrimEnd();
     }
 
     public string[] Lines { get; }
@@ -91,6 +133,31 @@ class Request
     public string Body { get; set; }
 }
 
+enum StatusCode
+{
+    [Description("OK")]
+    Ok = 200,
+
+    [Description("Created")]
+    Created = 201,
+
+    [Description("Not Found")]
+    NotFound = 404,
+
+    [Description("Internal Server Error")]
+    InternalServerError = 500,
+}
+
+
+public static class EnumExtensions
+{
+    public static string GetDescription(this Enum value)
+    {
+        return value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DescriptionAttribute>() is { } attribute
+            ? attribute.Description
+            : value.ToString();
+    }
+}
 
 
 
