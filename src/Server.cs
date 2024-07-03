@@ -22,9 +22,6 @@ Task HandleConnection(Socket socket)
 
 
     var lineFirstPart = lines[0].Split(" ");
-
-
-
     var method = lineFirstPart[0];
     var path = lineFirstPart[1];
     var httpVersion = lineFirstPart[2];
@@ -45,6 +42,23 @@ Task HandleConnection(Socket socket)
         var userAgent = lines.SingleOrDefault(a => a.Contains("User-Agent:"));
         var headerVal = userAgent.Split(": ")[1];
         response = $"{httpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
+    }
+    else if (path.StartsWith("/files/"))
+    {
+        var fileName = path.Substring(7);
+        string fileText = "";
+        try
+        {
+            fileText = File.ReadAllText(@$"C:\tmp\{fileName}");
+        }
+        catch (Exception e)
+        {
+            response = $"{httpVersion} 404 Not Found\r\n\r\n";
+            socket.Send(Encoding.UTF8.GetBytes(response));
+            socket.Close();
+            return Task.CompletedTask;
+        }
+        response = $"{httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length - 1}\r\n\r\n{fileText}";
     }
     else
     {
