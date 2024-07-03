@@ -15,12 +15,8 @@ var val = Encoding.UTF8.GetString(responseBuffer).Split("\r\n");
 
 var lineFirstPart = val[0].Split(" ");
 
-string headerVal = "";
-
-if (val[3] != "")
-{
-    headerVal = val[3].Split(": ")[1];
-}
+var userAgent = val.SingleOrDefault(a => a.Contains("User-Agent:"));
+var headerVal = userAgent.Split(": ")[1];
 
 
 var method = lineFirstPart[0];
