@@ -129,7 +129,7 @@ class Response
    
         if (Body != null)
         {
-            builder.Append($"{Body}");
+            builder.Append($"{Body.TrimEnd("\0")}");
         }
         return builder.ToString();
     }
