@@ -9,7 +9,6 @@ while (true)
 {
     var socket = server.AcceptSocket();
     await HandleConnection(socket);
-
 }
 
 
@@ -43,15 +42,24 @@ Task HandleConnection(Socket socket)
         var fileName = request.Path.Substring(7);
         string fileText = "";
         var directory = Environment.GetCommandLineArgs()[2];
-        string filePath = $"{directory}/{fileName}";
-        if (File.Exists(filePath))
+        string filePath = Path.Combine(directory,fileName);
+        if (request.HttpMethod == "GET")
         {
-            fileText = File.ReadAllText(filePath);
-            response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+            if (File.Exists(filePath))
+            {
+                fileText = File.ReadAllText(filePath);
+                response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
+            }
+            else
+            {
+                response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
+            }
         }
-        else
+        else if (request.HttpMethod == "POST")
         {
-            response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
+            using FileStream stream = File.Create(filePath);
+            stream.Write(Encoding.UTF8.GetBytes(request.Body));
+            response = $"{request.HttpVersion} 201 Created\r\n\r\n";
         }
 
     }
@@ -70,17 +78,18 @@ class Request
     public Request(byte[] buffer)
     {
         Lines = Encoding.UTF8.GetString(buffer).Split("\r\n");
-        Method = Lines[0].Split(" ")[0];
+        HttpMethod = Lines[0].Split(" ")[0];
         Path = Lines[0].Split(" ")[1];
         HttpVersion = Lines[0].Split(" ")[2];
+        Body = Lines[^1].TrimEnd('\0');
     }
 
     public string[] Lines { get; }
-    public string Method { get; }
+    public string HttpMethod { get; }
     public string Path { get; }
     public string HttpVersion { get; }
+    public string Body { get; set; }
 }
-
 
 
 
