@@ -123,7 +123,7 @@ class Response
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
         if (ContentType != null)
         {
-            builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}");
+            builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}\r\n");
         }
 
         if (Encoding == "gzip")
