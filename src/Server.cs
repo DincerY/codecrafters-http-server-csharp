@@ -32,7 +32,7 @@ Task HandleConnection(Socket socket)
     if (request.Path == "/")
     {
         //response = $"{request.HttpVersion} 200 OK\r\n\r\n";
-        response = new Response(request.HttpVersion, StatusCode.Ok).ToString();
+        response = new Response(request.HttpVersion, StatusCode.Ok).NoHeaderResponse();
     }
     else if (request.Path.StartsWith("/echo/"))
     {
@@ -80,14 +80,14 @@ Task HandleConnection(Socket socket)
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.UTF8.GetBytes(request.Body));
             //response = $"{request.HttpVersion} 201 Created\r\n\r\n";
-            response = new Response(request.HttpVersion, StatusCode.Created).ToString();
+            response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
         }
 
     }
     else
     {
         //response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
-        response = new Response(request.HttpVersion, StatusCode.NotFound).ToString();
+        response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
     }
 
     socket.Send(Encoding.UTF8.GetBytes(response));
@@ -112,10 +112,15 @@ class Response
         Encoding = encoding;
     }
     public StatusCode Status { get; }
-    public string Body { get; }
-    public string? ContentType { get; }
+    public string Body { get; } = "";
+    public string? ContentType { get; } = "";
     public string? Version { get; }
     public string Encoding { get; set; } = "";
+
+    public string NoHeaderResponse()
+    {
+        return $"{Version} {(int)Status} {Status.GetDescription()}\r\n\r\n";
+    }
 
     public override string ToString()
     {
