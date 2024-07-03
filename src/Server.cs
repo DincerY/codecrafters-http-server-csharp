@@ -47,18 +47,18 @@ Task HandleConnection(Socket socket)
     {
         var fileName = path.Substring(7);
         string fileText = "";
-        try
+        var directory = Environment.GetCommandLineArgs()[2];
+        string filePath = $"{directory}/{fileName}";
+        if (File.Exists(filePath))
         {
-            fileText = File.ReadAllText(@$"C:\tmp\{fileName}");
+            fileText = File.ReadAllText(filePath);
+            response = $"{httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length - 1}\r\n\r\n{fileText}";
         }
-        catch (Exception e)
+        else
         {
             response = $"{httpVersion} 404 Not Found\r\n\r\n";
-            socket.Send(Encoding.UTF8.GetBytes(response));
-            socket.Close();
-            return Task.CompletedTask;
         }
-        response = $"{httpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length - 1}\r\n\r\n{fileText}";
+       
     }
     else
     {
