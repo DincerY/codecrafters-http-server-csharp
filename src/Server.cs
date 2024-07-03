@@ -115,28 +115,29 @@ class Response
     public string Body { get; }
     public string? ContentType { get; }
     public string? Version { get; }
-    public string Encoding { get; set; }
+    public string Encoding { get; set; } = "";
 
     public override string ToString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
-        if (Encoding == "gzip")
-        {
-            builder.Append($"Content-Encoding: {Encoding}\r\n");
-        }
-        if (ContentType != null)
-        {
-            builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}\r\n");
-        }
-
-       
-
+        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}\r\n");
+   
         if (Body != null)
         {
-            builder.Append($"\r\n\r\n{Body}");
+            builder.Append($"{Body}");
         }
         return builder.ToString();
+    }
+
+    private string GetHeaders()
+    {
+        var res = $"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}\r\n";
+        if (Encoding == "gzip")
+        {
+            res += "Content-Encoding: gzip\r\n";
+        }
+
+        return res;
     }
 }
 
