@@ -28,6 +28,7 @@ Task HandleConnection(Socket socket)
     Request request = new Request(responseBuffer);
 
     string response = "";
+    byte[] arr = null;
 
     if (request.Path == "/")
     {
@@ -66,7 +67,7 @@ Task HandleConnection(Socket socket)
         else if (request.HttpMethod == "POST")
         {
             using FileStream stream = File.Create(filePath);
-            stream.Write(Encoding.UTF8.GetBytes(request.Body));
+            stream.Write(Encoding.ASCII.GetBytes(request.Body));
             response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
         }
     }
@@ -75,7 +76,7 @@ Task HandleConnection(Socket socket)
         response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
     }
 
-    socket.Send(Encoding.UTF8.GetBytes(response));
+    socket.Send(Encoding.ASCII.GetBytes(response));
     socket.Close();
     return Task.CompletedTask;
 }
@@ -101,7 +102,7 @@ class Response
     public string ContentType { get; } = "";
     public string Version { get; }
     public string Encoding { get; set; } = "";
-    private byte[] BodyEncoded => Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
+    private byte[] BodyEncoded => Compress(System.Text.Encoding.ASCII.GetBytes(Body), Encoding);
 
     public string NoHeaderResponse()
     {
@@ -115,8 +116,7 @@ class Response
         GetHeaders(builder);
         if (BodyEncoded != null)
         {
-            //builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(BodyEncoded)}");
-            builder.Append($"\r\n{BodyEncoded}");
+            builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(BodyEncoded)}");
         }
         return builder.ToString();
     }
@@ -157,7 +157,7 @@ class Request
 {
     public Request(byte[] buffer)
     {
-        Lines = Encoding.UTF8.GetString(buffer).Split("\r\n");
+        Lines = Encoding.ASCII.GetString(buffer).Split("\r\n");
         HttpMethod = Lines[0].Split(" ")[0];
         Path = Lines[0].Split(" ")[1];
         HttpVersion = Lines[0].Split(" ")[2];
