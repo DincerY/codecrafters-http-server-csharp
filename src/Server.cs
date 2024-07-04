@@ -123,8 +123,8 @@ class Response
         {
             if (Encoding == "gzip")
             {
-                var byteBody = Compress(System.Text.Encoding.ASCII.GetBytes(Body));
-                builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(byteBody)}");
+                var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body));
+                builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
             }
             else
             {
