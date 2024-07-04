@@ -48,14 +48,14 @@ Task HandleConnection(Socket socket)
     {
         string headerVal = "";
         request.Headers.TryGetValue("User-Agent", out headerVal);
-        response = new Response(request.HttpVersion, StatusCode.Ok,headerVal,"text/plain").ToString();
+        response = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToString();
     }
     else if (request.Path.StartsWith("/files/"))
     {
         var fileName = request.GetUrlParameter("/files/");
         string fileText = "";
         var directory = Environment.GetCommandLineArgs()[2];
-        string filePath = Path.Combine(directory,fileName);
+        string filePath = Path.Combine(directory, fileName);
         if (request.HttpMethod == "GET")
         {
             if (File.Exists(filePath))
@@ -95,12 +95,12 @@ class Response
         Version = version;
         Status = status;
     }
-    public Response(string version, StatusCode status, string body, string contentType) : this(version,status)
+    public Response(string version, StatusCode status, string body, string contentType) : this(version, status)
     {
         Body = body;
         ContentType = contentType;
     }
-    public Response(string version, StatusCode status, string body, string contentType, string encoding) : this(version, status,body, contentType)
+    public Response(string version, StatusCode status, string body, string contentType, string encoding) : this(version, status, body, contentType)
     {
         Encoding = encoding;
     }
@@ -121,7 +121,7 @@ class Response
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
         if (Body != null && Encoding == "gzip")
         {
-            var byteBody = Zip(Body);
+            var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body));
             builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
         }
         if (Body != null)
@@ -138,37 +138,22 @@ class Response
         {
             res += "Content-Encoding: gzip\r\n";
         }
-        
-
         return res;
     }
-    private static byte[] Zip(string str)
+    private static byte[] Compress(byte[] body)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(str);
-
-        using (var msi = new MemoryStream(bytes))
-        using (var mso = new MemoryStream())
+        using (var stream = new MemoryStream())
         {
-            using (var gs = new GZipStream(mso, CompressionMode.Compress))
+            using (var gzip = new GZipStream(stream, CompressionMode.Compress))
             {
-                //msi.CopyTo(gs);
-                CopyTo(msi, gs);
+                gzip.Write(body,0, body.Length);
             }
-
-            return mso.ToArray();
+            return stream.ToArray();
         }
-    }
-    private static void CopyTo(Stream src, Stream dest)
-    {
-        byte[] bytes = new byte[4096];
 
-        int cnt;
-
-        while ((cnt = src.Read(bytes, 0, bytes.Length)) != 0)
-        {
-            dest.Write(bytes, 0, cnt);
-        }
+        return body;
     }
+
 }
 
 class Request
