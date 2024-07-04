@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Mime;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 TcpListener server = new TcpListener(IPAddress.Any, 4221);
@@ -42,21 +44,19 @@ Task HandleConnection(Socket socket)
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
-        string headerVal = "";
-        request.Headers.TryGetValue("User-Agent", out headerVal);
+        request.Headers.TryGetValue("User-Agent", out var headerVal);
         response = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToString();
     }
     else if (request.Path.StartsWith("/files/"))
     {
         var fileName = request.GetUrlParameter("/files/");
-        string fileText = "";
         var directory = Environment.GetCommandLineArgs()[2];
         string filePath = Path.Combine(directory, fileName);
         if (request.HttpMethod == "GET")
         {
             if (File.Exists(filePath))
             {
-                fileText = File.ReadAllText(filePath);
+                var fileText = File.ReadAllText(filePath);
                 response = new Response(request.HttpVersion, StatusCode.Ok, fileText,
                     "application/octet-stream").ToString();
             }
@@ -69,7 +69,6 @@ Task HandleConnection(Socket socket)
         {
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.UTF8.GetBytes(request.Body));
-            //response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
             response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
         }
     }
@@ -101,8 +100,8 @@ class Response
 }
     public StatusCode Status { get; }
     private string Body { get; } = "";
-    public string? ContentType { get; } = "";
-    public string? Version { get; }
+    public string ContentType { get; } = "";
+    public string Version { get; }
     public string Encoding { get; set; } = "";
     private byte[] BodyEncoded => Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
 
@@ -114,7 +113,8 @@ class Response
     public override string ToString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
+        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
+        GetHeaders(builder);
         if (BodyEncoded != null)
         {
             builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(BodyEncoded)}");
@@ -122,14 +122,13 @@ class Response
         return builder.ToString();
     }
 
-    private string GetHeaders()
+    private void GetHeaders(StringBuilder builder)
     {
-        var res = $"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n";
+        builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n");
         if (Encoding == "gzip")
         {
-            res += "Content-Encoding: gzip\r\n";
+            builder.Append("Content-Encoding: gzip\r\n");
         }
-        return res;
     }
     private byte[] Compress(byte[] body, string encoding)
     {
@@ -150,7 +149,6 @@ class Response
             }
         }
         return body;
- 
     }
 }
 
