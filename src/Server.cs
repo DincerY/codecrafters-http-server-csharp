@@ -28,7 +28,8 @@ Task HandleConnection(Socket socket)
     Request request = new Request(responseBuffer);
 
     string response = "";
-    byte[] arr = null;
+    byte[] byteResponse = null;
+    byte[] encodedData = null;
 
     if (request.Path == "/")
     {
@@ -38,8 +39,21 @@ Task HandleConnection(Socket socket)
     {
         var parameter = request.GetUrlParameter("/echo/");
         var encodingTypes = request.GetHeader("Accept-Encoding");
+
+        if (encodingTypes.Contains("gzip"))
+        {
+            encodedData = Response.Compress(System.Text.Encoding.ASCII.GetBytes(parameter), encodingTypes);
+            response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {encodedData.Length}\r\n\r\n";
+
+            var bytes = Encoding.ASCII.GetBytes(response);
+            byteResponse = new byte[bytes.Length + encodedData.Length];
+        }
+        else
+        {
+            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToString();
+        }
         
-        response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToString();
+        
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
@@ -76,7 +90,25 @@ Task HandleConnection(Socket socket)
         response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
     }
 
-    socket.Send(Encoding.ASCII.GetBytes(response));
+    if (byteResponse != null)
+    {
+        var bytes = Encoding.ASCII.GetBytes(response);
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            byteResponse[i] = (byte)bytes[i];
+        }
+
+        for (int i = bytes.Length; i < bytes.Length + encodedData.Length; i++)
+        {
+            byteResponse[i] = encodedData[i - bytes.Length];
+        }
+        socket.Send(byteResponse);
+    }
+    else
+    {
+        socket.Send(Encoding.ASCII.GetBytes(response));
+    }
+
     socket.Close();
     return Task.CompletedTask;
 }
@@ -131,7 +163,7 @@ class Response
             builder.Append("Content-Encoding: gzip\r\n");
         }
     }
-    private byte[] Compress(byte[] body, string encoding)
+    public static byte[] Compress(byte[] body, string encoding)
     {
         string[] encodings = encoding.Split(',');
         foreach (var e in encodings)
