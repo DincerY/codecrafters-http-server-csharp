@@ -43,7 +43,7 @@ Task HandleConnection(Socket socket)
         if (encodingTypes.Contains("gzip"))
         {
             encodedData = Response.Compress(System.Text.Encoding.ASCII.GetBytes(parameter), encodingTypes);
-            response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {encodedData.Length}\r\n\r\n";
+            response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {encodedData.Length}\r\nContent-Encoding: gzip\r\n\r\n";
 
             var bytes = Encoding.ASCII.GetBytes(response);
             byteResponse = new byte[bytes.Length + encodedData.Length];
