@@ -153,8 +153,6 @@ class Response
             }
             return stream.ToArray();
         }
-
-        return body;
     }
 
 }
