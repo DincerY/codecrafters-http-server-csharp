@@ -34,7 +34,7 @@ Task HandleConnection(Socket socket)
     {
         var parameter = request.GetUrlParameter("/echo/");
         var encodingTypes = request.GetHeader("Accept-Encoding");
-        if (encodingTypes.Contains("gzip"))
+        if (encodingTypes != null && encodingTypes.Contains("gzip"))
         {
             response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", "gzip").ToString();
         }
