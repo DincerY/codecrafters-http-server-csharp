@@ -72,7 +72,8 @@ Task HandleConnection(Socket socket)
         {
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.UTF8.GetBytes(request.Body));
-            response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
+            //response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
+            response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
         }
 
     }
