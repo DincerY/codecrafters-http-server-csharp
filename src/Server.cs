@@ -39,8 +39,6 @@ Task HandleConnection(Socket socket)
         var encodingTypes = request.GetHeader("Accept-Encoding");
         
         response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToString();
-        
-      
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
@@ -117,11 +115,14 @@ class Response
         GetHeaders(builder);
         if (BodyEncoded != null)
         {
-            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(BodyEncoded)}");
+            //builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(BodyEncoded)}");
+            builder.Append($"\r\n{BodyEncoded}");
         }
         return builder.ToString();
     }
 
+       
+    
     private void GetHeaders(StringBuilder builder)
     {
         builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n");
@@ -172,7 +173,7 @@ class Request
         }
     }
     public Dictionary<string, string> Headers { get; private set; }
-    public string[] Lines { get; }
+    private string[] Lines { get; }
     public string HttpMethod { get; }
     public string Path { get; }
     public string HttpVersion { get; }
