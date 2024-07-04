@@ -50,7 +50,7 @@ Task HandleConnection(Socket socket)
         }
         else
         {
-            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToString();
+            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
         }
         
         
@@ -133,7 +133,7 @@ class Response
     private string Body { get; } = "";
     public string ContentType { get; } = "";
     public string Version { get; }
-    public string Encoding { get; set; } = "";
+    public string Encoding { get ; set; } = "";
     private byte[] BodyEncoded => Compress(System.Text.Encoding.ASCII.GetBytes(Body), Encoding);
 
     public string NoHeaderResponse()
