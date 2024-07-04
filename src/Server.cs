@@ -35,14 +35,10 @@ Task HandleConnection(Socket socket)
     {
         var parameter = request.GetUrlParameter("/echo/");
         var encodingTypes = request.GetHeader("Accept-Encoding");
-        if (encodingTypes != null && encodingTypes.Contains("gzip"))
-        {
-            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", "gzip").ToString();
-        }
-        else
-        {
-            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
-        }
+        
+        response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToString();
+        
+      
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
@@ -109,6 +105,7 @@ class Response
     public string? ContentType { get; } = "";
     public string? Version { get; }
     public string Encoding { get; set; } = "";
+    public byte[] BodyEncoded => Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
 
     public string NoHeaderResponse()
     {
@@ -121,38 +118,42 @@ class Response
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
         if (Body != null)
         {
-            if (Encoding == "gzip")
-            {
-                var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body));
-                builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
-            }
-            else
-            {
-                builder.Append($"\r\n{Body}");
-            }
+            var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
+            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
         }
         return builder.ToString();
     }
 
     private string GetHeaders()
     {
-        var res = $"Content-Type: {ContentType}\r\nContent-Length: {Body.Length}\r\n";
+        var res = $"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n";
         if (Encoding == "gzip")
         {
             res += "Content-Encoding: gzip\r\n";
         }
         return res;
     }
-    private static byte[] Compress(byte[] body)
+    private byte[] Compress(byte[] body, string encoding)
     {
-        using (var stream = new MemoryStream())
+        string[] encodings = encoding.Split(',');
+        foreach (var e in encodings)
         {
-            using (var gzip = new GZipStream(stream, CompressionMode.Compress))
+            switch (e)
             {
-                gzip.Write(body,0, body.Length);
+                case "gzip":
+                    using (var stream = new MemoryStream())
+                    {
+                        using (var gzip = new GZipStream(stream, CompressionMode.Compress))
+                        {
+                            gzip.Write(body, 0, body.Length);
+                        }
+                        return stream.ToArray();
+                    }
             }
-            return stream.ToArray();
         }
+
+        return body;
+
     }
 
 }
