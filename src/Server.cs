@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Mime;
 using System.Net.Sockets;
@@ -118,7 +119,11 @@ class Response
     {
         StringBuilder builder = new StringBuilder();
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
-   
+        if (Body != null && Encoding == "gzip")
+        {
+            var byteBody = Zip(Body);
+            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
+        }
         if (Body != null)
         {
             builder.Append($"\r\n{Body}");
@@ -136,6 +141,33 @@ class Response
         
 
         return res;
+    }
+    private static byte[] Zip(string str)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(str);
+
+        using (var msi = new MemoryStream(bytes))
+        using (var mso = new MemoryStream())
+        {
+            using (var gs = new GZipStream(mso, CompressionMode.Compress))
+            {
+                //msi.CopyTo(gs);
+                CopyTo(msi, gs);
+            }
+
+            return mso.ToArray();
+        }
+    }
+    private static void CopyTo(Stream src, Stream dest)
+    {
+        byte[] bytes = new byte[4096];
+
+        int cnt;
+
+        while ((cnt = src.Read(bytes, 0, bytes.Length)) != 0)
+        {
+            dest.Write(bytes, 0, cnt);
+        }
     }
 }
 
