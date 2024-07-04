@@ -111,7 +111,7 @@ class Response
 
     public string NoHeaderResponse()
     {
-        return $"{Version} {(int)Status} {Status.GetDescription()}";
+        return $"{Version} {(int)Status} {Status.GetDescription()}\r\n\r\n";
     }
 
     public override string ToString()
