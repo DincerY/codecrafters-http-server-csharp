@@ -72,7 +72,6 @@ Task HandleConnection(Socket socket)
             //response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
             response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
         }
-
     }
     else
     {
@@ -99,13 +98,13 @@ class Response
     public Response(string version, StatusCode status, string body, string contentType, string encoding) : this(version, status, body, contentType)
     {
         Encoding = encoding;
-    }
+}
     public StatusCode Status { get; }
-    public string Body { get; } = "";
+    private string Body { get; } = "";
     public string? ContentType { get; } = "";
     public string? Version { get; }
     public string Encoding { get; set; } = "";
-    public byte[] BodyEncoded => Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
+    private byte[] BodyEncoded => Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
 
     public string NoHeaderResponse()
     {
@@ -116,10 +115,9 @@ class Response
     {
         StringBuilder builder = new StringBuilder();
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
-        if (Body != null)
+        if (BodyEncoded != null)
         {
-            var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body), Encoding);
-            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
+            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(BodyEncoded)}");
         }
         return builder.ToString();
     }
@@ -151,11 +149,9 @@ class Response
                     }
             }
         }
-
         return body;
-
+ 
     }
-
 }
 
 class Request
@@ -222,7 +218,6 @@ public static class EnumExtensions
             : value.ToString();
     }
 }
-
 
 
 
