@@ -119,14 +119,17 @@ class Response
     {
         StringBuilder builder = new StringBuilder();
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
-        if (Body != null && Encoding == "gzip")
-        {
-            var byteBody = Compress(System.Text.Encoding.UTF8.GetBytes(Body));
-            builder.Append($"\r\n{System.Text.Encoding.UTF8.GetString(byteBody)}");
-        }
         if (Body != null)
         {
-            builder.Append($"\r\n{Body}");
+            if (Encoding == "gzip")
+            {
+                var byteBody = Compress(System.Text.Encoding.ASCII.GetBytes(Body));
+                builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(byteBody)}");
+            }
+            else
+            {
+                builder.Append($"\r\n{Body}");
+            }
         }
         return builder.ToString();
     }
