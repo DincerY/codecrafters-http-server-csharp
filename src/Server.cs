@@ -18,7 +18,8 @@ while (true)
 
 Task HandleConnection(Socket socket)
 {
-    var responseBuffer = new byte[socket.Receive(responseBuffer);
+    var responseBuffer = new byte[1024];
+    socket.Receive(responseBuffer);
 
 
     Request request = new Request(responseBuffer);
