@@ -6,10 +6,8 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 
-
 TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
-
 
 
 while (true)
@@ -18,11 +16,9 @@ while (true)
     await HandleConnection(socket);
 }
 
-
 Task HandleConnection(Socket socket)
 {
-    var responseBuffer = new byte[1024];
-    socket.Receive(responseBuffer);
+    var responseBuffer = new byte[socket.Receive(responseBuffer);
 
 
     Request request = new Request(responseBuffer);
@@ -31,33 +27,30 @@ Task HandleConnection(Socket socket)
 
     if (request.Path == "/")
     {
-        //response = $"{request.HttpVersion} 200 OK\r\n\r\n";
         response = new Response(request.HttpVersion, StatusCode.Ok).NoHeaderResponse();
     }
     else if (request.Path.StartsWith("/echo/"))
     {
-        var message = request.Path.Substring(6);
-        if (request.Headers.ContainsValue("gzip"))
+        var parameter = request.GetUrlParameter("/echo/");
+        var encodingTypes = request.GetHeader("Accept-Encoding");
+        if (encodingTypes.Contains("gzip"))
         {
-            response = new Response(request.HttpVersion, StatusCode.Ok, message, "text/plain", "gzip").ToString();
+            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", "gzip").ToString();
         }
         else
         {
-            //response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {message.Length}\r\n\r\n{message}";
-            response = new Response(request.HttpVersion, StatusCode.Ok, message, "text/plain").ToString();
+            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
         }
-        
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
-        var userAgent = request.Lines.SingleOrDefault(a => a.Contains("User-Agent:"));
-        var headerVal = userAgent.Split(": ")[1];
-        //response = $"{request.HttpVersion} 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {headerVal.Length}\r\n\r\n{headerVal}";
+        string headerVal = "";
+        request.Headers.TryGetValue("User-Agent", out headerVal);
         response = new Response(request.HttpVersion, StatusCode.Ok,headerVal,"text/plain").ToString();
     }
     else if (request.Path.StartsWith("/files/"))
     {
-        var fileName = request.Path.Substring(7);
+        var fileName = request.GetUrlParameter("/files/");
         string fileText = "";
         var directory = Environment.GetCommandLineArgs()[2];
         string filePath = Path.Combine(directory,fileName);
@@ -66,27 +59,24 @@ Task HandleConnection(Socket socket)
             if (File.Exists(filePath))
             {
                 fileText = File.ReadAllText(filePath);
-                //response = $"{request.HttpVersion} 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileText.Length}\r\n\r\n{fileText}";
                 response = new Response(request.HttpVersion, StatusCode.Ok, fileText,
                     "application/octet-stream").ToString();
             }
             else
             {
-                response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
+                response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
             }
         }
         else if (request.HttpMethod == "POST")
         {
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.UTF8.GetBytes(request.Body));
-            //response = $"{request.HttpVersion} 201 Created\r\n\r\n";
             response = new Response(request.HttpVersion, StatusCode.Created).NoHeaderResponse();
         }
 
     }
     else
     {
-        //response = $"{request.HttpVersion} 404 Not Found\r\n\r\n";
         response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
     }
 
@@ -119,17 +109,17 @@ class Response
 
     public string NoHeaderResponse()
     {
-        return $"{Version} {(int)Status} {Status.GetDescription()}\r\n\r\n";
+        return $"{Version} {(int)Status} {Status.GetDescription()}";
     }
 
     public override string ToString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}\r\n");
+        builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n{GetHeaders()}");
    
         if (Body != null)
         {
-            builder.Append($"{Body}");
+            builder.Append($"\r\n{Body}");
         }
         return builder.ToString();
     }
@@ -141,6 +131,7 @@ class Response
         {
             res += "Content-Encoding: gzip\r\n";
         }
+        
 
         return res;
     }
@@ -170,7 +161,19 @@ class Request
     public string HttpMethod { get; }
     public string Path { get; }
     public string HttpVersion { get; }
-    public string Body { get; set; }
+    public string Body { get; }
+
+    public string? GetHeader(string key)
+    {
+        Headers.TryGetValue(key, out var value);
+        return value;
+    }
+
+    public string GetUrlParameter(string preUrl)
+    {
+        return Path.Substring(preUrl.Length);
+    }
+
 }
 
 enum StatusCode
@@ -187,6 +190,7 @@ enum StatusCode
     [Description("Internal Server Error")]
     InternalServerError = 500,
 }
+
 
 public static class EnumExtensions
 {
