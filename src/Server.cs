@@ -182,7 +182,8 @@ class Response
         for (int i = 0; i < byteArr.Length; i++)
         {
             byteArrayResult[i] = (byte)byteArr[i];
-       
+        }
+
         for (int i = byteArr.Length; i < BodyEncoded.Length + byteArr.Length; i++)
         {
             byteArrayResult[i] = BodyEncoded[i - byteArr.Length];
