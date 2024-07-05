@@ -203,7 +203,7 @@ class Response
     private void GetHeaders(StringBuilder builder)
     {
         builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n");
-        if (Encoding == "gzip")
+        if (Encoding.Contains("gzip"))
         {
             builder.Append("Content-Encoding: gzip\r\n");
         }
