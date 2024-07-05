@@ -23,14 +23,11 @@ Task HandleConnection(Socket socket)
 
     Request request = new Request(responseBuffer);
 
-    string response = "";
     byte[] byteResponse = null;
-    //byte[] byteResponse = null;
-    //byte[] encodedData = null;
 
     if (request.Path == "/")
     {
-        response = new Response(request.HttpVersion, StatusCode.Ok).NoHeaderResponse();
+        byteResponse = new Response(request.HttpVersion, StatusCode.Ok).ToBytes();
     }
     else if (request.Path.StartsWith("/echo/"))
     {
@@ -49,7 +46,6 @@ Task HandleConnection(Socket socket)
         }
         else
         {
-            response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
             byteResponse = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToBytes(true);
         }
 
@@ -58,7 +54,6 @@ Task HandleConnection(Socket socket)
     else if (request.Path.StartsWith("/user-agent"))
     {
         request.Headers.TryGetValue("User-Agent", out var headerVal);
-        response = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToString();
         byteResponse = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToBytes(true);
     }
     else if (request.Path.StartsWith("/files/"))
@@ -71,60 +66,29 @@ Task HandleConnection(Socket socket)
             if (File.Exists(filePath))
             {
                 var fileText = File.ReadAllText(filePath);
-                response = new Response(request.HttpVersion, StatusCode.Ok, fileText,
-                    "application/octet-stream").ToString();
                 byteResponse = new Response(request.HttpVersion, StatusCode.Ok, fileText,
                     "application/octet-stream").ToBytes(true);
             }
             else
             {
-                response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
                 byteResponse = new Response(request.HttpVersion, StatusCode.NotFound).ToBytes();
             }
         }
         else if (request.HttpMethod == "POST")
         {
-            using FileStream stream = File.Create(filePath);
+            using FileStream stream = File.Create("filePath");
             stream.Write(Encoding.ASCII.GetBytes(request.Body));
-            response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
 
             byteResponse = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToBytes(true);
         }
     }
     else
     {
-        response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
         byteResponse = new Response(request.HttpVersion, StatusCode.NotFound).ToBytes();
     }
 
-    //if (byteResponse != null)
-    //{
-    //    var bytes = Encoding.ASCII.GetBytes(response);
-    //    for (int i = 0; i < bytes.Length; i++)
-    //    {
-    //        byteResponse[i] = (byte)bytes[i];
-    //    }
-
-    //    for (int i = bytes.Length; i < bytes.Length + encodedData.Length; i++)
-    //    {
-    //        byteResponse[i] = encodedData[i - bytes.Length];
-    //    }
-    //    socket.Send(byteResponse);
-    //}
-    //else
-    //{
-    //    socket.Send(Encoding.ASCII.GetBytes(response));
-    //}
-    //
-    if (byteResponse != null)
-    {
-        socket.Send(byteResponse);
-    }
-    else
-    {
-        socket.Send(Encoding.ASCII.GetBytes(response));
-    }
-
+    
+    socket.Send(byteResponse);
     socket.Close();
     return Task.CompletedTask;
 }
