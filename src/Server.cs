@@ -1,12 +1,8 @@
-using System;
 using System.ComponentModel;
 using System.IO.Compression;
 using System.Net;
-using System.Net.Mime;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.InteropServices.JavaScript;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 TcpListener server = new TcpListener(IPAddress.Any, 4221);
@@ -29,7 +25,8 @@ Task HandleConnection(Socket socket)
 
     string response = "";
     byte[] byteResponse = null;
-    byte[] encodedData = null;
+    //byte[] byteResponse = null;
+    //byte[] encodedData = null;
 
     if (request.Path == "/")
     {
@@ -42,18 +39,21 @@ Task HandleConnection(Socket socket)
 
         if (encodingTypes != null && encodingTypes.Contains("gzip"))
         {
-            encodedData = Response.Compress(System.Text.Encoding.ASCII.GetBytes(parameter), encodingTypes);
-            response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {encodedData.Length}\r\nContent-Encoding: gzip\r\n\r\n";
+            //encodedData = Response.Compress(System.Text.Encoding.ASCII.GetBytes(parameter), encodingTypes);
+            //response = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {encodedData.Length}\r\nContent-Encoding: gzip\r\n\r\n";
 
-            var bytes = Encoding.ASCII.GetBytes(response);
-            byteResponse = new byte[bytes.Length + encodedData.Length];
+            //var bytes = Encoding.ASCII.GetBytes(response);
+            //byteResponse = new byte[bytes.Length + encodedData.Length];
+
+            byteResponse = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain", encodingTypes).ToBytes(true);
         }
         else
         {
             response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
+            var data = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToBytes();
         }
-        
-        
+
+
     }
     else if (request.Path.StartsWith("/user-agent"))
     {
@@ -90,18 +90,27 @@ Task HandleConnection(Socket socket)
         response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
     }
 
+    //if (byteResponse != null)
+    //{
+    //    var bytes = Encoding.ASCII.GetBytes(response);
+    //    for (int i = 0; i < bytes.Length; i++)
+    //    {
+    //        byteResponse[i] = (byte)bytes[i];
+    //    }
+
+    //    for (int i = bytes.Length; i < bytes.Length + encodedData.Length; i++)
+    //    {
+    //        byteResponse[i] = encodedData[i - bytes.Length];
+    //    }
+    //    socket.Send(byteResponse);
+    //}
+    //else
+    //{
+    //    socket.Send(Encoding.ASCII.GetBytes(response));
+    //}
+    //
     if (byteResponse != null)
     {
-        var bytes = Encoding.ASCII.GetBytes(response);
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            byteResponse[i] = (byte)bytes[i];
-        }
-
-        for (int i = bytes.Length; i < bytes.Length + encodedData.Length; i++)
-        {
-            byteResponse[i] = encodedData[i - bytes.Length];
-        }
         socket.Send(byteResponse);
     }
     else
@@ -128,12 +137,12 @@ class Response
     public Response(string version, StatusCode status, string body, string contentType, string encoding) : this(version, status, body, contentType)
     {
         Encoding = encoding;
-}
+    }
     public StatusCode Status { get; }
     private string Body { get; } = "";
     public string ContentType { get; } = "";
     public string Version { get; }
-    public string Encoding { get ; set; } = "";
+    public string Encoding { get; set; } = "";
     private byte[] BodyEncoded => Compress(System.Text.Encoding.ASCII.GetBytes(Body), Encoding);
 
     public string NoHeaderResponse()
@@ -146,15 +155,43 @@ class Response
         StringBuilder builder = new StringBuilder();
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
         GetHeaders(builder);
-        if (BodyEncoded != null)
-        {
-            builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(BodyEncoded)}");
-        }
+        builder.Append("\r\n\r\n");
+        //if (BodyEncoded != null)
+        //{
+        //    builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(BodyEncoded)}");
+        //}
         return builder.ToString();
     }
 
+    public byte[] ToBytes(bool withHeader = false)
+    {
+        byte[] byteArrayResult = null;
+        string stringRes = NoHeaderResponse();
+
+        if (withHeader)
+        {
+            stringRes = this.ToString();
+        }
+
+        var byteArr = System.Text.Encoding.ASCII.GetBytes(stringRes);
+        
+        
+        byteArrayResult = new byte[byteArr.Length + BodyEncoded.Length];
+        
+
+        for (int i = 0; i < byteArr.Length; i++)
+        {
+            byteArrayResult[i] = (byte)byteArr[i];
        
-    
+        for (int i = byteArr.Length; i < BodyEncoded.Length + byteArr.Length; i++)
+        {
+            byteArrayResult[i] = BodyEncoded[i - byteArr.Length];
+        }
+
+        return byteArrayResult;
+    }
+
+
     private void GetHeaders(StringBuilder builder)
     {
         builder.Append($"Content-Type: {ContentType}\r\nContent-Length: {BodyEncoded.Length}\r\n");
