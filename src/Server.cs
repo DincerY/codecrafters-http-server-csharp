@@ -50,7 +50,7 @@ Task HandleConnection(Socket socket)
         else
         {
             response = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToString();
-            var data = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToBytes();
+            byteResponse = new Response(request.HttpVersion, StatusCode.Ok, parameter, "text/plain").ToBytes(true);
         }
 
 
@@ -59,6 +59,7 @@ Task HandleConnection(Socket socket)
     {
         request.Headers.TryGetValue("User-Agent", out var headerVal);
         response = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToString();
+        byteResponse = new Response(request.HttpVersion, StatusCode.Ok, headerVal, "text/plain").ToBytes(true);
     }
     else if (request.Path.StartsWith("/files/"))
     {
@@ -76,6 +77,7 @@ Task HandleConnection(Socket socket)
             else
             {
                 response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
+                byteResponse = new Response(request.HttpVersion, StatusCode.NotFound).ToBytes();
             }
         }
         else if (request.HttpMethod == "POST")
@@ -83,11 +85,14 @@ Task HandleConnection(Socket socket)
             using FileStream stream = File.Create(filePath);
             stream.Write(Encoding.ASCII.GetBytes(request.Body));
             response = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToString();
+
+            byteResponse = new Response(request.HttpVersion, StatusCode.Created, request.Body, "application/octet-stream").ToBytes(true);
         }
     }
     else
     {
         response = new Response(request.HttpVersion, StatusCode.NotFound).NoHeaderResponse();
+        byteResponse = new Response(request.HttpVersion, StatusCode.NotFound).ToBytes();
     }
 
     //if (byteResponse != null)
@@ -155,7 +160,7 @@ class Response
         StringBuilder builder = new StringBuilder();
         builder.Append($"{Version} {(int)Status} {Status.GetDescription()}\r\n");
         GetHeaders(builder);
-        builder.Append("\r\n\r\n");
+        builder.Append("\r\n");
         //if (BodyEncoded != null)
         //{
         //    builder.Append($"\r\n{System.Text.Encoding.ASCII.GetString(BodyEncoded)}");
