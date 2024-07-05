@@ -73,6 +73,8 @@ Task HandleConnection(Socket socket)
                 var fileText = File.ReadAllText(filePath);
                 response = new Response(request.HttpVersion, StatusCode.Ok, fileText,
                     "application/octet-stream").ToString();
+                byteResponse = new Response(request.HttpVersion, StatusCode.Ok, fileText,
+                    "application/octet-stream").ToBytes(true);
             }
             else
             {
