@@ -138,17 +138,19 @@ class Response
     {
         Body = body;
         ContentType = contentType;
+        BodyEncoded = Compress(System.Text.Encoding.ASCII.GetBytes(Body), "");
     }
     public Response(string version, StatusCode status, string body, string contentType, string encoding) : this(version, status, body, contentType)
     {
         Encoding = encoding;
+        BodyEncoded = Compress(System.Text.Encoding.ASCII.GetBytes(Body), Encoding);
     }
     public StatusCode Status { get; }
     private string Body { get; } = "";
     public string ContentType { get; } = "";
     public string Version { get; }
     public string Encoding { get; set; } = "";
-    private byte[] BodyEncoded => Compress(System.Text.Encoding.ASCII.GetBytes(Body), Encoding);
+    private byte[] BodyEncoded { get; }
 
     public string NoHeaderResponse()
     {
@@ -208,7 +210,7 @@ class Response
     }
     public static byte[] Compress(byte[] body, string encoding)
     {
-        string[] encodings = encoding.Split(',');
+        string[] encodings = encoding.Split(", ");
         foreach (var e in encodings)
         {
             switch (e)
